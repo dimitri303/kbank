@@ -246,6 +246,27 @@ function registerGenesysAuthProvider() {
   tryRegister();
 }
 
+function injectGenesys() {
+  if (typeof Genesys === 'function') return; // already loaded
+
+  window['_genesysJs'] = 'Genesys';
+  window['Genesys'] = window['Genesys'] || function() {
+    (window['Genesys'].q = window['Genesys'].q || []).push(arguments);
+  };
+  window['Genesys'].t = 1 * new Date();
+  window['Genesys'].c = {
+    environment: 'prod-euw1',
+    deploymentId: '40b483fe-6988-418f-8c47-63678eff3ec4'
+  };
+
+  const ys = document.createElement('script');
+  ys.async = 1;
+  ys.src = 'https://apps.mypurecloud.ie/genesys-bootstrap/genesys.min.js';
+  ys.charset = 'utf-8';
+  document.head.appendChild(ys);
+  console.log('[KBank Auth] Genesys snippet injected');
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 
 function kbankAuthInit() {
@@ -258,8 +279,13 @@ function kbankAuthInit() {
   // 3. Update nav
   updateNav(user);
 
-  // 4. Register Genesys AuthProvider
-  registerGenesysAuthProvider();
+  // 4. Only inject Genesys and register AuthProvider if user is logged in
+  if (user && localStorage.getItem(KBANK_ID_TOKEN_KEY)) {
+    injectGenesys();
+    registerGenesysAuthProvider();
+  } else {
+    console.log('[KBank Auth] Not logged in -- Genesys not loaded');
+  }
 }
 
 if (document.readyState === 'loading') {

@@ -856,21 +856,7 @@
 
   <script src="auth-v3.js"></script>
 
-  <!-- GENESYS CHAT WIDGET PLACEHOLDER -->
-  <script type="text/javascript" charset="utf-8">
-    (function (g, e, n, es, ys) {
-      g['_genesysJs'] = e;
-      g[e] = g[e] || function () {
-        (g[e].q = g[e].q || []).push(arguments)
-      };
-      g[e].t = 1 * new Date();
-      g[e].c = es;
-      ys = document.createElement('script'); ys.async = 1; ys.src = n; ys.charset = 'utf-8'; document.head.appendChild(ys);
-    })(window, 'Genesys', 'https://apps.mypurecloud.ie/genesys-bootstrap/genesys.min.js', {
-      environment: 'prod-euw1',
-      deploymentId: '40b483fe-6988-418f-8c47-63678eff3ec4'
-    });
-  </script>
+  <!-- Genesys injected dynamically by auth-v3.js after login -->
 
 </body>
 </html>
