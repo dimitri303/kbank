@@ -155,10 +155,14 @@ function registerGenesysAuthProvider() {
           window.location.href = `https://${AUTH0_DOMAIN}/authorize?${params}`;
         });
 
-        AuthProvider.registerEvent('AuthFailed', () => {
-          console.warn('[KBank Auth] Genesys AuthFailed');
-        });
       });
+
+      // Trigger auth flow so Genesys calls getAuthCode
+      setTimeout(() => {
+        console.log('[KBank Auth] Triggering Auth.authorize');
+        Genesys('command', 'Auth.authorize');
+      }, 1500);
+
     } else if (attempts++ < 30) {
       setTimeout(tryRegister, 300);
     } else {
