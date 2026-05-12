@@ -195,15 +195,24 @@ function registerGenesysAuthProvider() {
       AuthProvider.registerCommand('getAuthCode', (e) => {
         console.log('[KBank Auth] getAuthCode called', e.data);
         const { forceUpdate } = e.data || {};
+
         if (forceUpdate) {
           console.log('[KBank Auth] forceUpdate -- redirecting to login');
           kbankLoginRedirect();
           e.resolve();
           return;
         }
-        // In implicit flow getAuthCode should not normally fire,
-        // but resolve empty so Genesys doesn't hang.
-        e.resolve({});
+
+        // Implicit flow: resolve with idToken
+        const idToken = localStorage.getItem(KBANK_ID_TOKEN_KEY);
+        if (idToken) {
+          console.log('[KBank Auth] Resolving getAuthCode with idToken (implicit flow)');
+          e.resolve({ idToken });
+        } else {
+          console.log('[KBank Auth] No idToken -- redirecting to login');
+          kbankLoginRedirect();
+          e.resolve();
+        }
       });
 
       AuthProvider.registerCommand('reAuthenticate', (e) => {
@@ -214,17 +223,6 @@ function registerGenesysAuthProvider() {
 
       AuthProvider.subscribe('Auth.ready', () => {
         console.log('[KBank Auth] Auth.ready');
-
-        // Push id_token to Genesys as soon as Auth is ready
-        const idToken = localStorage.getItem(KBANK_ID_TOKEN_KEY);
-        if (idToken) {
-          console.log('[KBank Auth] Pushing id_token via setTokens');
-          AuthProvider.command('Auth.setTokens', { idToken })
-            .then(() => console.log('[KBank Auth] setTokens resolved'))
-            .catch((err) => console.warn('[KBank Auth] setTokens error:', err));
-        } else {
-          console.log('[KBank Auth] No id_token in storage -- user not logged in');
-        }
       });
 
       AuthProvider.subscribe('Auth.authenticated', () => {
