@@ -1,8 +1,9 @@
 /**
  * K Bank — Auth0 OIDC Authentication
- * Uses Authorization Code flow with PKCE.
- * On login, redirects to Auth0, gets a real ID token,
- * and passes it to Genesys authenticated messaging.
+ * Uses Genesys AuthProvider plugin + getAuthCode command.
+ * Genesys calls getAuthCode → we initiate a fresh Auth0 login to get a new code
+ * → Auth0 redirects to callback.html → we store code → redirect back →
+ * Genesys calls getAuthCode again → we supply the code → Genesys exchanges it.
  */
 
 const AUTH0_DOMAIN    = 'dev-jio6oy1xm6qkupod.us.auth0.com';
@@ -55,6 +56,8 @@ function clearSession() {
   localStorage.removeItem(KBANK_SESSION_KEY);
   localStorage.removeItem('pkce_verifier');
   localStorage.removeItem('pkce_state');
+  localStorage.removeItem('genesys_auth_code');
+  localStorage.removeItem('genesys_auth_verifier');
 }
 
 function getInitials(firstName, lastName) {
@@ -97,24 +100,76 @@ function updateNav(user) {
   }
 }
 
-// ── GENESYS TOKEN INJECTION ───────────────────────────────────────────────────
+// ── GENESYS AUTH PROVIDER ─────────────────────────────────────────────────────
+// Genesys calls getAuthCode when it needs to authenticate the session.
+// We initiate a silent/prompt=none Auth0 request to get a fresh code,
+// then hand it back to Genesys with the redirect URI.
 
-function injectGenesysToken(idToken) {
+function registerGenesysAuthProvider() {
   let attempts = 0;
-  const tryInject = () => {
+
+  const tryRegister = () => {
     if (typeof Genesys === 'function') {
-      Genesys('command', 'Auth.setToken', { token: idToken });
-      console.log('[KBank Auth] Genesys token injected.');
-    } else if (attempts++ < 20) {
-      setTimeout(tryInject, 300);
+      Genesys('registerPlugin', 'AuthProvider', (AuthProvider) => {
+        console.log('[KBank Auth] AuthProvider plugin ready');
+
+        AuthProvider.registerCommand('getAuthCode', async (e) => {
+          console.log('[KBank Auth] Genesys called getAuthCode');
+
+          // Check if we have a pending code from a recent Auth0 redirect
+          const pendingCode    = localStorage.getItem('genesys_auth_code');
+          const pendingVerifier = localStorage.getItem('genesys_auth_verifier');
+
+          if (pendingCode && pendingVerifier) {
+            console.log('[KBank Auth] Resolving getAuthCode with stored code');
+            localStorage.removeItem('genesys_auth_code');
+            localStorage.removeItem('genesys_auth_verifier');
+            e.resolve({
+              authCode:    pendingCode,
+              redirectUri: REDIRECT_URI,
+            });
+            return;
+          }
+
+          // No pending code — initiate Auth0 login flow for Genesys
+          // Use prompt=none if user is already logged in (silent auth)
+          const verifier  = generateRandomString(64);
+          const state     = 'genesys_' + generateRandomString(16);
+          const challenge = await generateCodeChallenge(verifier);
+
+          localStorage.setItem('genesys_pkce_verifier', verifier);
+          localStorage.setItem('genesys_pkce_state', state);
+
+          const params = new URLSearchParams({
+            response_type:         'code',
+            client_id:             AUTH0_CLIENT_ID,
+            redirect_uri:          REDIRECT_URI,
+            scope:                 'openid profile email',
+            state,
+            code_challenge:        challenge,
+            code_challenge_method: 'S256',
+            prompt:                'none', // silent — user already authenticated
+          });
+
+          console.log('[KBank Auth] Redirecting to Auth0 for Genesys code (silent)');
+          window.location.href = `https://${AUTH0_DOMAIN}/authorize?${params}`;
+        });
+
+        AuthProvider.registerEvent('AuthFailed', () => {
+          console.warn('[KBank Auth] Genesys AuthFailed');
+        });
+      });
+    } else if (attempts++ < 30) {
+      setTimeout(tryRegister, 300);
     } else {
-      console.warn('[KBank Auth] Genesys SDK not found after retries.');
+      console.warn('[KBank Auth] Genesys SDK not found');
     }
   };
-  tryInject();
+
+  tryRegister();
 }
 
-// ── LOGIN: redirect to Auth0 ──────────────────────────────────────────────────
+// ── LOGIN: user-initiated redirect to Auth0 ───────────────────────────────────
 
 async function kbankLoginRedirect() {
   const verifier  = generateRandomString(64);
@@ -137,57 +192,6 @@ async function kbankLoginRedirect() {
   window.location.href = `https://${AUTH0_DOMAIN}/authorize?${params}`;
 }
 
-// ── CALLBACK: exchange code for tokens ────────────────────────────────────────
-
-async function kbankHandleCallback() {
-  const params     = new URLSearchParams(window.location.search);
-  const code       = params.get('code');
-  const state      = params.get('state');
-  const verifier   = localStorage.getItem('pkce_verifier');
-  const savedState = localStorage.getItem('pkce_state');
-
-  if (!code || state !== savedState) {
-    console.error('[KBank Auth] Invalid callback state.');
-    window.location.href = 'index.html';
-    return;
-  }
-
-  const tokenRes = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      grant_type:    'authorization_code',
-      client_id:     AUTH0_CLIENT_ID,
-      code,
-      redirect_uri:  REDIRECT_URI,
-      code_verifier: verifier,
-    }),
-  });
-
-  const tokens = await tokenRes.json();
-
-  if (!tokens.id_token) {
-    console.error('[KBank Auth] Token exchange failed:', tokens);
-    window.location.href = 'index.html';
-    return;
-  }
-
-  const claims = parseJWT(tokens.id_token);
-  const user = {
-    firstName: claims.given_name || claims.nickname || (claims.name || '').split(' ')[0] || 'User',
-    lastName:  claims.family_name || (claims.name || '').split(' ').slice(1).join(' ') || '',
-    email:     claims.email || claims.sub,
-    idToken:   tokens.id_token,
-  };
-
-  saveSession(user);
-  localStorage.removeItem('pkce_verifier');
-  localStorage.removeItem('pkce_state');
-
-  injectGenesysToken(tokens.id_token);
-  setTimeout(() => { window.location.href = 'index.html'; }, 200);
-}
-
 // ── LOGOUT ────────────────────────────────────────────────────────────────────
 
 function kbankLogout() {
@@ -202,13 +206,13 @@ function kbankLogout() {
   window.location.href = `https://${AUTH0_DOMAIN}/oidc/logout?${params}`;
 }
 
-// ── INIT: runs on every page load ─────────────────────────────────────────────
+// ── INIT ──────────────────────────────────────────────────────────────────────
 
 function kbankAuthInit() {
   const user = getSession();
   updateNav(user);
-  if (user && user.idToken) {
-    injectGenesysToken(user.idToken);
+  if (user) {
+    registerGenesysAuthProvider();
   }
 }
 

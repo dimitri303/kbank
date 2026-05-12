@@ -2,67 +2,121 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>K Bank — Signing in...</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
   <style>
-    :root {
-      --purple: #6B2FD9;
-      --purple-pale: #F0EBFC;
-      --dark: #1A1A2E;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--purple-pale);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      color: var(--dark);
-    }
-    .spinner {
-      width: 40px; height: 40px;
-      border: 3px solid rgba(107,47,217,0.2);
-      border-top-color: var(--purple);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
+    :root { --purple: #6B2FD9; --purple-pale: #F0EBFC; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--purple-pale); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+    .spinner { width: 40px; height: 40px; border: 3px solid rgba(107,47,217,0.2); border-top-color: var(--purple); border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    p { font-size: 16px; color: #6B2FD9; font-weight: 500; }
+    p { font-size: 16px; color: var(--purple); font-weight: 500; }
     .error { color: #E53E3E; font-size: 14px; max-width: 400px; text-align: center; display: none; }
   </style>
 </head>
 <body>
   <div class="spinner"></div>
-  <p>Signing you in to K Bank...</p>
+  <p id="statusMsg">Signing you in to K Bank...</p>
   <span class="error" id="errorMsg"></span>
 
-  <script src="auth.js"></script>
   <script>
-    window.addEventListener('DOMContentLoaded', async () => {
-      console.log('[KBank Callback] Page loaded');
-      console.log('[KBank Callback] Full URL:', window.location.href);
-      console.log('[KBank Callback] Search params:', window.location.search);
-      console.log('[KBank Callback] pkce_verifier:', localStorage.getItem('pkce_verifier'));
-      console.log('[KBank Callback] pkce_state:', localStorage.getItem('pkce_state'));
+    const AUTH0_DOMAIN    = 'dev-jio6oy1xm6qkupod.us.auth0.com';
+    const AUTH0_CLIENT_ID = 'eYTMidZRXEU2sDMTJ9j1Rx2n0KPAbHm6';
+    const REDIRECT_URI    = 'https://dimitri303.github.io/kbank/callback.html';
 
-      const params = new URLSearchParams(window.location.search);
-      console.log('[KBank Callback] code:', params.get('code'));
-      console.log('[KBank Callback] state:', params.get('state'));
-
+    function parseJWT(token) {
       try {
-        await kbankHandleCallback();
-      } catch (err) {
-        console.error('[KBank Auth] Callback error:', err);
-        const errorEl = document.getElementById('errorMsg');
-        errorEl.textContent = 'Something went wrong: ' + err.message;
-        errorEl.style.display = 'block';
-        setTimeout(() => { window.location.href = 'index.html'; }, 4000);
+        let str = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (str.length % 4) str += '=';
+        return JSON.parse(atob(str));
+      } catch { return null; }
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const params     = new URLSearchParams(window.location.search);
+      const code       = params.get('code');
+      const state      = params.get('state');
+      const error      = params.get('error');
+
+      // Handle Auth0 errors (e.g. prompt=none login_required)
+      if (error) {
+        console.error('[KBank Callback] Auth0 error:', error, params.get('error_description'));
+        window.location.href = 'index.html';
+        return;
       }
+
+      if (!code) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      // Determine if this is a Genesys silent auth callback or a user login callback
+      const genesysState  = localStorage.getItem('genesys_pkce_state');
+      const userState     = localStorage.getItem('pkce_state');
+      const isGenesysFlow = state && state === genesysState;
+      const isUserFlow    = state && state === userState;
+
+      console.log('[KBank Callback] isGenesysFlow:', isGenesysFlow, 'isUserFlow:', isUserFlow);
+
+      if (isGenesysFlow) {
+        // Genesys silent auth — store code for getAuthCode to consume, then go back
+        document.getElementById('statusMsg').textContent = 'Connecting to chat...';
+        const verifier = localStorage.getItem('genesys_pkce_verifier');
+        localStorage.setItem('genesys_auth_code', code);
+        localStorage.setItem('genesys_auth_verifier', verifier);
+        localStorage.removeItem('genesys_pkce_state');
+        localStorage.removeItem('genesys_pkce_verifier');
+        console.log('[KBank Callback] Stored Genesys auth code, returning to page');
+        window.location.href = 'index.html';
+        return;
+      }
+
+      if (isUserFlow) {
+        // Normal user login — exchange code for tokens to get user info
+        const verifier = localStorage.getItem('pkce_verifier');
+
+        try {
+          const tokenRes = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              grant_type:    'authorization_code',
+              client_id:     AUTH0_CLIENT_ID,
+              code,
+              redirect_uri:  REDIRECT_URI,
+              code_verifier: verifier,
+            }),
+          });
+
+          const tokens = await tokenRes.json();
+          console.log('[KBank Callback] Token exchange:', tokens.id_token ? 'success' : tokens.error);
+
+          if (tokens.id_token) {
+            const claims = parseJWT(tokens.id_token);
+            const user = {
+              firstName:   claims.given_name || claims.nickname || (claims.name || '').split(' ')[0] || 'User',
+              lastName:    claims.family_name || (claims.name || '').split(' ').slice(1).join(' ') || '',
+              email:       claims.email || claims.sub,
+            };
+            localStorage.setItem('kbank_user', JSON.stringify(user));
+            console.log('[KBank Callback] User saved:', user.firstName, user.lastName);
+          }
+
+          localStorage.removeItem('pkce_verifier');
+          localStorage.removeItem('pkce_state');
+          window.location.href = 'index.html';
+
+        } catch (err) {
+          console.error('[KBank Callback] Token exchange failed:', err);
+          document.getElementById('errorMsg').textContent = 'Sign in error: ' + err.message;
+          document.getElementById('errorMsg').style.display = 'block';
+          setTimeout(() => { window.location.href = 'index.html'; }, 3000);
+        }
+        return;
+      }
+
+      // Unknown state — just go home
+      console.warn('[KBank Callback] Unknown state, redirecting home');
+      window.location.href = 'index.html';
     });
   </script>
 </body>
