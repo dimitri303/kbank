@@ -42,17 +42,17 @@ function parseJWT(token) {
 
 function getSession() {
   try {
-    const raw = sessionStorage.getItem(KBANK_SESSION_KEY);
+    const raw = localStorage.getItem(KBANK_SESSION_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
 
 function saveSession(user) {
-  sessionStorage.setItem(KBANK_SESSION_KEY, JSON.stringify(user));
+  localStorage.setItem(KBANK_SESSION_KEY, JSON.stringify(user));
 }
 
 function clearSession() {
-  sessionStorage.removeItem(KBANK_SESSION_KEY);
+  localStorage.removeItem(KBANK_SESSION_KEY);
   sessionStorage.removeItem('pkce_verifier');
   sessionStorage.removeItem('pkce_state');
 }
