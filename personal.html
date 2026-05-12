@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>K Bank — Personal Banking</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --purple:       #6B2FD9;
+      --purple-deep:  #4A1FA0;
+      --purple-light: #8B50E8;
+      --purple-pale:  #F0EBFC;
+      --purple-mid:   #D4C2F7;
+      --white:        #FFFFFF;
+      --off-white:    #FAFAFA;
+      --grey-light:   #F2F2F5;
+      --grey:         #9191A0;
+      --dark:         #1A1A2E;
+      --text:         #2C2C3E;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--white); overflow-x: hidden; }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 64px; height: 72px;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(107,47,217,0.08);
+    }
+
+    .nav-logo { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--purple); letter-spacing: -0.5px; text-decoration: none; }
+    .nav-logo span { color: var(--dark); }
+    .nav-links { display: flex; gap: 40px; list-style: none; }
+    .nav-links a { text-decoration: none; font-size: 15px; font-weight: 500; color: var(--text); transition: color 0.2s; padding-bottom: 2px; border-bottom: 2px solid transparent; }
+    .nav-links a:hover, .nav-links a.active { color: var(--purple); border-bottom-color: var(--purple); }
+    .nav-cta { display: flex; gap: 12px; align-items: center; }
+    .btn-ghost { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; color: var(--purple); background: none; border: 1.5px solid var(--purple); border-radius: 8px; padding: 9px 20px; cursor: pointer; transition: all 0.2s; }
+    .btn-ghost:hover { background: var(--purple-pale); }
+    .btn-primary { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; color: var(--white); background: var(--purple); border: none; border-radius: 8px; padding: 10px 22px; cursor: pointer; transition: background 0.2s, transform 0.15s; }
+    .btn-primary:hover { background: var(--purple-deep); transform: translateY(-1px); }
+
+    /* PAGE HERO */
+    .page-hero {
+      padding-top: 72px;
+      background: linear-gradient(135deg, var(--dark) 0%, #2D1060 100%);
+      color: white;
+      padding-bottom: 64px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-hero::before {
+      content: '';
+      position: absolute;
+      top: -150px; right: -100px;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(139,80,232,0.3) 0%, transparent 70%);
+    }
+
+    .page-hero-inner {
+      padding: 64px 64px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .page-hero-content .breadcrumb {
+      font-size: 13px;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 20px;
+    }
+
+    .page-hero-content .breadcrumb a { color: rgba(255,255,255,0.45); text-decoration: none; }
+    .page-hero-content .breadcrumb a:hover { color: white; }
+
+    .page-hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(34px, 3.5vw, 52px);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.5px;
+      margin-bottom: 20px;
+    }
+
+    .page-hero h1 em { font-style: normal; color: var(--purple-light); }
+
+    .page-hero p {
+      font-size: 17px;
+      font-weight: 300;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.65);
+      max-width: 460px;
+      margin-bottom: 36px;
+    }
+
+    .page-hero-img {
+      height: 380px;
+      border-radius: 16px 16px 0 0;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px dashed rgba(255,255,255,0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: rgba(255,255,255,0.4);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+    }
+
+    /* TABS NAV */
+    .tabs-bar {
+      background: var(--white);
+      border-bottom: 1px solid var(--grey-light);
+      padding: 0 64px;
+      display: flex;
+      gap: 0;
+      position: sticky;
+      top: 72px;
+      z-index: 90;
+    }
+
+    .tab-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--grey);
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      padding: 18px 28px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover { color: var(--purple); }
+    .tab-btn.active { color: var(--purple); border-bottom-color: var(--purple); }
+
+    /* SECTIONS */
+    section { padding: 80px 64px; }
+
+    .section-eyebrow {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--purple); margin-bottom: 14px; display: block;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 2.8vw, 38px); font-weight: 700;
+      color: var(--dark); line-height: 1.15; letter-spacing: -0.4px; margin-bottom: 14px;
+    }
+
+    .section-sub { font-size: 16px; color: var(--grey); font-weight: 300; line-height: 1.65; max-width: 540px; }
+
+    /* PRODUCT FEATURE ROWS */
+    .feature-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      margin-bottom: 80px;
+    }
+
+    .feature-row:last-child { margin-bottom: 0; }
+    .feature-row.reverse { direction: rtl; }
+    .feature-row.reverse > * { direction: ltr; }
+
+    .feature-img {
+      height: 340px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--purple-pale), var(--purple-mid));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--purple);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      border: 1.5px dashed var(--purple-mid);
+    }
+
+    .feature-content h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px; font-weight: 700; color: var(--dark);
+      margin-bottom: 16px; line-height: 1.2;
+    }
+
+    .feature-content p {
+      font-size: 16px; color: var(--grey); line-height: 1.7; margin-bottom: 24px;
+    }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      color: var(--text);
+      font-weight: 400;
+    }
+
+    .check {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--purple-pale);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--purple);
+    }
+
+    /* RATES TABLE */
+    .rates-section { background: var(--off-white); }
+
+    .rates-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 40px;
+      background: var(--white);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+    }
+
+    .rates-table th {
+      background: var(--dark);
+      color: white;
+      padding: 18px 24px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .rates-table td {
+      padding: 18px 24px;
+      font-size: 15px;
+      color: var(--text);
+      border-bottom: 1px solid var(--grey-light);
+    }
+
+    .rates-table tr:last-child td { border-bottom: none; }
+
+    .rates-table tr:hover td { background: var(--purple-pale); }
+
+    .rate-highlight {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--purple);
+    }
+
+    .rate-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: var(--purple-pale);
+      color: var(--purple);
+    }
+
+    /* CTA BAND */
+    .cta-band {
+      background: var(--purple);
+      padding: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
+    }
+
+    .cta-band h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px; font-weight: 700; color: white;
+      line-height: 1.2; max-width: 500px;
+    }
+
+    .cta-band-actions { display: flex; gap: 12px; flex-shrink: 0; }
+
+    .btn-white {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 600;
+      color: var(--purple); background: white;
+      border: none; border-radius: 8px;
+      padding: 13px 28px; cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-white:hover { background: var(--purple-pale); }
+
+    .btn-outline-white {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 500;
+      color: white; background: transparent;
+      border: 1.5px solid rgba(255,255,255,0.4);
+      border-radius: 8px;
+      padding: 13px 28px; cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-outline-white:hover { border-color: white; }
+
+    /* FOOTER */
+    footer { background: var(--dark); color: rgba(255,255,255,0.6); padding: 56px 64px 32px; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
+    .footer-brand p { font-size: 14px; line-height: 1.65; max-width: 280px; }
+    .footer-col h5 { font-size: 13px; font-weight: 600; color: white; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 20px; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .footer-col a { font-size: 14px; color: rgba(255,255,255,0.5); text-decoration: none; transition: color 0.2s; }
+    .footer-col a:hover { color: var(--purple-light); }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 24px; display: flex; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,0.3); }
+
+    /* GENESYS */
+    .genesys-placeholder { position: fixed; bottom: 28px; right: 28px; z-index: 999; }
+    .genesys-btn { width: 60px; height: 60px; border-radius: 50%; background: var(--purple); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(107,47,217,0.35); transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+    .genesys-btn:hover { transform: scale(1.08); box-shadow: 0 12px 32px rgba(107,47,217,0.45); }
+    .genesys-badge { position: absolute; top: -2px; right: -2px; width: 16px; height: 16px; border-radius: 50%; background: #22C55E; border: 2px solid white; }
+    .genesys-tooltip { position: absolute; bottom: 72px; right: 0; background: var(--dark); color: white; font-size: 12px; font-weight: 500; padding: 8px 14px; border-radius: 8px; white-space: nowrap; opacity: 0; transform: translateY(6px); transition: all 0.2s; pointer-events: none; }
+    .genesys-placeholder:hover .genesys-tooltip { opacity: 1; transform: translateY(0); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .page-hero-content > * { animation: fadeUp 0.5s ease both; }
+    .page-hero-content .breadcrumb { animation-delay: 0.05s; }
+    .page-hero h1 { animation-delay: 0.15s; }
+    .page-hero p { animation-delay: 0.25s; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="index.html" class="nav-logo">K<span>Bank</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="personal.html" class="active">Personal Banking</a></li>
+      <li><a href="contact.html">Contact Us</a></li>
+    </ul>
+    <div class="nav-cta">
+      <button class="btn-ghost">Log In</button>
+      <button class="btn-primary">Open Account</button>
+    </div>
+  </nav>
+
+  <!-- PAGE HERO -->
+  <div class="page-hero">
+    <div class="page-hero-inner">
+      <div class="page-hero-content">
+        <p class="breadcrumb"><a href="index.html">Home</a> / Personal Banking</p>
+        <h1>Banking built around <em>your life</em></h1>
+        <p>From your first current account to a mortgage on your dream home — K Bank has the products and support to take you further.</p>
+        <button class="btn-primary" style="font-size:15px;padding:13px 28px;border-radius:10px;">Open an Account Today</button>
+      </div>
+      <div class="page-hero-img">
+        <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        IMAGE PLACEHOLDER
+        <span style="font-size:11px;">600 × 380px</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-bar">
+    <button class="tab-btn active">Current Accounts</button>
+    <button class="tab-btn">Savings &amp; ISAs</button>
+    <button class="tab-btn">Credit Cards</button>
+    <button class="tab-btn">Personal Loans</button>
+    <button class="tab-btn">Mortgages</button>
+  </div>
+
+  <!-- CURRENT ACCOUNTS -->
+  <section>
+    <span class="section-eyebrow">Current Accounts</span>
+    <h2 class="section-title">The account that fits your life</h2>
+    <p class="section-sub">No monthly fees. No surprise charges. Just smart everyday banking with the tools you need.</p>
+
+    <div style="margin-top: 56px;">
+      <div class="feature-row">
+        <div class="feature-img">
+          <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          IMAGE PLACEHOLDER
+          <span style="font-size:11px;opacity:0.6;">480 × 340px</span>
+        </div>
+        <div class="feature-content">
+          <h3>K Bank Current Account</h3>
+          <p>Everything you need from a current account, with none of the hassle. Open in minutes and manage everything from our app.</p>
+          <ul class="feature-list">
+            <li><span class="check"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> No monthly fees, ever</li>
+            <li><span class="check"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> Instant payment notifications</li>
+            <li><span class="check"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> Freeze / unfreeze your card instantly</li>
+            <li><span class="check"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> Fee-free spending abroad</li>
+            <li><span class="check"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> FSCS protected up to £85,000</li>
+          </ul>
+          <button class="btn-primary" style="font-size:15px;padding:12px 26px;">Apply in Minutes</button>
+        </div>
+      </div>
+
+      <div class="feature-row reverse">
+        <div class="feature-img">
+          <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          IMAGE PLACEHOLDER
+          <span style="font-size:11px;opacity:0.6;">480 × 340px</span>
+        </div>
+        <div class="feature-content">
+          <h3>K Bank Premium Account</h3>
+          <p>For customers who want more. Premium benefits including worldwide travel insurance, cashback, and a dedicated relationship manager.</p>
+          <ul class="feature-list">
+            <li><span class="check"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> Worldwide travel &amp; medical insurance</li>
+            <li><span class="check"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> 1% cashback on all card spend</li>
+            <li><span class="check"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> Dedicated relationship manager</li>
+            <li><span class="check"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> Airport lounge access worldwide</li>
+            <li><span class="check"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> Priority customer support</li>
+          </ul>
+          <button class="btn-primary" style="font-size:15px;padding:12px 26px;">Upgrade to Premium</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RATES TABLE -->
+  <section class="rates-section">
+    <span class="section-eyebrow">Savings Rates</span>
+    <h2 class="section-title">Rates that reward you</h2>
+    <p class="section-sub">Competitive interest rates across all our savings products. Updated monthly.</p>
+    <table class="rates-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>AER / Gross</th>
+          <th>Term</th>
+          <th>Min. Deposit</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>K Easy Access Saver</strong></td>
+          <td><span class="rate-highlight">4.85%</span></td>
+          <td>No fixed term</td>
+          <td>£1</td>
+          <td><span class="rate-badge">Open</span></td>
+        </tr>
+        <tr>
+          <td><strong>K 1-Year Fixed Saver</strong></td>
+          <td><span class="rate-highlight">5.10%</span></td>
+          <td>12 months</td>
+          <td>£500</td>
+          <td><span class="rate-badge">Open</span></td>
+        </tr>
+        <tr>
+          <td><strong>K 2-Year Fixed Saver</strong></td>
+          <td><span class="rate-highlight">5.25%</span></td>
+          <td>24 months</td>
+          <td>£500</td>
+          <td><span class="rate-badge">Open</span></td>
+        </tr>
+        <tr>
+          <td><strong>K Cash ISA</strong></td>
+          <td><span class="rate-highlight">4.60%</span></td>
+          <td>No fixed term</td>
+          <td>£1</td>
+          <td><span class="rate-badge">Open</span></td>
+        </tr>
+        <tr>
+          <td><strong>K Stocks &amp; Shares ISA</strong></td>
+          <td>Variable</td>
+          <td>Flexible</td>
+          <td>£50/month</td>
+          <td><span class="rate-badge">Open</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- BANNER PLACEHOLDER -->
+  <div style="width:100%;height:280px;background:linear-gradient(135deg,var(--purple-pale),var(--purple-mid));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--purple);font-size:13px;font-weight:500;border-top:1.5px dashed var(--purple-mid);border-bottom:1.5px dashed var(--purple-mid);">
+    <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+    BANNER IMAGE PLACEHOLDER
+    <span style="font-size:11px;opacity:0.6;">Full width × 280px</span>
+  </div>
+
+  <!-- CTA BAND -->
+  <div class="cta-band">
+    <h2>Ready to make the switch to K Bank?</h2>
+    <div class="cta-band-actions">
+      <button class="btn-white">Open Account</button>
+      <a href="contact.html"><button class="btn-outline-white">Talk to an Advisor</button></a>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="index.html" class="nav-logo" style="display:block;margin-bottom:16px;color:white;">K<span style="color:var(--purple-light);">Bank</span></a>
+        <p>Simple, transparent banking for everyone. Authorised by the Prudential Regulation Authority and regulated by the Financial Conduct Authority.</p>
+      </div>
+      <div class="footer-col">
+        <h5>Products</h5>
+        <ul>
+          <li><a href="personal.html">Current Accounts</a></li>
+          <li><a href="personal.html">Savings &amp; ISAs</a></li>
+          <li><a href="personal.html">Credit Cards</a></li>
+          <li><a href="personal.html">Mortgages</a></li>
+          <li><a href="personal.html">Personal Loans</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Help</h5>
+        <ul>
+          <li><a href="contact.html">Contact Us</a></li>
+          <li><a href="#">FAQs</a></li>
+          <li><a href="#">Security Centre</a></li>
+          <li><a href="#">Accessibility</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Company</h5>
+        <ul>
+          <li><a href="#">About K Bank</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Press</a></li>
+          <li><a href="#">Legal</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 K Bank Ltd. All rights reserved.</span>
+      <span>Privacy Policy · Cookie Policy · Terms of Use</span>
+    </div>
+  </footer>
+
+  <!-- GENESYS CHAT WIDGET PLACEHOLDER -->
+  <!--
+  ============================================================
+  GENESYS WEB MESSENGER — DROP DEPLOYMENT SNIPPET HERE
+  Replace this placeholder button with the Genesys embed code.
+  ============================================================
+  -->
+  <div class="genesys-placeholder">
+    <div class="genesys-tooltip">Chat with us</div>
+    <button class="genesys-btn" onclick="alert('Genesys Web Messenger will load here.')">
+      <svg width="26" height="26" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+      </svg>
+      <div class="genesys-badge"></div>
+    </button>
+  </div>
+
+</body>
+</html>
