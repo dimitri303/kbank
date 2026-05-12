@@ -44,14 +44,24 @@
   <script src="auth.js"></script>
   <script>
     window.addEventListener('DOMContentLoaded', async () => {
+      console.log('[KBank Callback] Page loaded');
+      console.log('[KBank Callback] Full URL:', window.location.href);
+      console.log('[KBank Callback] Search params:', window.location.search);
+      console.log('[KBank Callback] pkce_verifier:', localStorage.getItem('pkce_verifier'));
+      console.log('[KBank Callback] pkce_state:', localStorage.getItem('pkce_state'));
+
+      const params = new URLSearchParams(window.location.search);
+      console.log('[KBank Callback] code:', params.get('code'));
+      console.log('[KBank Callback] state:', params.get('state'));
+
       try {
         await kbankHandleCallback();
       } catch (err) {
         console.error('[KBank Auth] Callback error:', err);
         const errorEl = document.getElementById('errorMsg');
-        errorEl.textContent = 'Something went wrong signing you in. Redirecting...';
+        errorEl.textContent = 'Something went wrong: ' + err.message;
         errorEl.style.display = 'block';
-        setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+        setTimeout(() => { window.location.href = 'index.html'; }, 4000);
       }
     });
   </script>

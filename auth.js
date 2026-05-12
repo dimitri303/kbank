@@ -53,8 +53,8 @@ function saveSession(user) {
 
 function clearSession() {
   localStorage.removeItem(KBANK_SESSION_KEY);
-  sessionStorage.removeItem('pkce_verifier');
-  sessionStorage.removeItem('pkce_state');
+  localStorage.removeItem('pkce_verifier');
+  localStorage.removeItem('pkce_state');
 }
 
 function getInitials(firstName, lastName) {
@@ -121,8 +121,8 @@ async function kbankLoginRedirect() {
   const state     = generateRandomString(16);
   const challenge = await generateCodeChallenge(verifier);
 
-  sessionStorage.setItem('pkce_verifier', verifier);
-  sessionStorage.setItem('pkce_state', state);
+  localStorage.setItem('pkce_verifier', verifier);
+  localStorage.setItem('pkce_state', state);
 
   const params = new URLSearchParams({
     response_type:         'code',
@@ -143,8 +143,8 @@ async function kbankHandleCallback() {
   const params     = new URLSearchParams(window.location.search);
   const code       = params.get('code');
   const state      = params.get('state');
-  const verifier   = sessionStorage.getItem('pkce_verifier');
-  const savedState = sessionStorage.getItem('pkce_state');
+  const verifier   = localStorage.getItem('pkce_verifier');
+  const savedState = localStorage.getItem('pkce_state');
 
   if (!code || state !== savedState) {
     console.error('[KBank Auth] Invalid callback state.');
@@ -181,8 +181,8 @@ async function kbankHandleCallback() {
   };
 
   saveSession(user);
-  sessionStorage.removeItem('pkce_verifier');
-  sessionStorage.removeItem('pkce_state');
+  localStorage.removeItem('pkce_verifier');
+  localStorage.removeItem('pkce_state');
 
   injectGenesysToken(tokens.id_token);
   setTimeout(() => { window.location.href = 'index.html'; }, 200);
