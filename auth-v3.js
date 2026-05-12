@@ -47,6 +47,7 @@ function getSession() {
 function clearSession() {
   localStorage.removeItem(KBANK_SESSION_KEY);
   localStorage.removeItem(KBANK_ID_TOKEN_KEY);
+  localStorage.removeItem('kbank_auth_nonce');
   localStorage.removeItem('implicit_nonce');
 }
 
@@ -168,6 +169,7 @@ function parseImplicitCallback() {
 
   localStorage.setItem(KBANK_SESSION_KEY, JSON.stringify(user));
   localStorage.setItem(KBANK_ID_TOKEN_KEY, idToken);
+  localStorage.setItem('kbank_auth_nonce', claims.nonce || '');
   console.log('[KBank Auth] Implicit login success:', user.firstName, user.lastName);
 
   return { user, idToken };
@@ -207,7 +209,11 @@ function registerGenesysAuthProvider() {
         const idToken = localStorage.getItem(KBANK_ID_TOKEN_KEY);
         if (idToken) {
           console.log('[KBank Auth] Resolving getAuthCode with idToken (implicit flow)');
-          e.resolve({ idToken });
+          e.resolve({
+            idToken,
+            redirectUri: REDIRECT_URI,
+            nonce: localStorage.getItem('kbank_auth_nonce') || '',
+          });
         } else {
           console.log('[KBank Auth] No idToken -- redirecting to login');
           kbankLoginRedirect();
