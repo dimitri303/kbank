@@ -857,21 +857,20 @@
   <script src="auth.js"></script>
 
   <!-- GENESYS CHAT WIDGET PLACEHOLDER -->
-  <!--
-  ============================================================
-  GENESYS WEB MESSENGER — DROP DEPLOYMENT SNIPPET HERE
-  Replace this placeholder button with the Genesys embed code.
-  ============================================================
-  -->
-  <div class="genesys-placeholder">
-    <div class="genesys-tooltip">Chat with us</div>
-    <button class="genesys-btn" onclick="alert('Genesys Web Messenger will load here.')">
-      <svg width="26" height="26" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
-        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-      </svg>
-      <div class="genesys-badge"></div>
-    </button>
-  </div>
+  <script type="text/javascript" charset="utf-8">
+    (function (g, e, n, es, ys) {
+      g['_genesysJs'] = e;
+      g[e] = g[e] || function () {
+        (g[e].q = g[e].q || []).push(arguments)
+      };
+      g[e].t = 1 * new Date();
+      g[e].c = es;
+      ys = document.createElement('script'); ys.async = 1; ys.src = n; ys.charset = 'utf-8'; document.head.appendChild(ys);
+    })(window, 'Genesys', 'https://apps.mypurecloud.ie/genesys-bootstrap/genesys.min.js', {
+      environment: 'prod-euw1',
+      deploymentId: '40b483fe-6988-418f-8c47-63678eff3ec4'
+    });
+  </script>
 
 </body>
 </html>
